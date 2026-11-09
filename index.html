@@ -30,7 +30,6 @@
   .tab-content{display:none;}
   .tab-content.active{display:block;}
 
-  /* Блок движения средств */
   .flow-summary{display:flex; flex-direction:column; gap:12px; margin-bottom:16px;}
   .flow-item{display:flex; justify-content:space-between; font-size:14px; padding-bottom:8px; border-bottom:1px dashed var(--border);}
   .flow-item.total{font-size:18px; font-weight:700; border-bottom:none; padding-top:8px;}
@@ -97,7 +96,7 @@
 
 <header>
   <div class="avatars"><div class="avatar n">Н</div><div class="avatar l">Л</div></div>
-  <button class="month">Сентябрь 2026 ▾</button>
+  <button class="month">Текущий месяц</button>
 </header>
 
 <main>
@@ -210,10 +209,10 @@
 </div>
 
 <script>
-  // СТАРТОВЫЙ БАЛАНС
+  // СТАРТОВЫЙ БАЛАНС (ваши 5 448 776)
   let START_BALANCE = 5448776; 
 
-  // ДАННЫЕ
+  // НАЧАЛЬНЫЕ ДАННЫЕ
   let EXPENSES = [
     { id: 'housing', icon: '🏠', name: 'Квартира', plan: 47000, nikita: 23500, liza: 23500 },
     { id: 'food',    icon: '🍔', name: 'Продукты', plan: 25000, nikita: 10000, liza: 8000 },
@@ -243,7 +242,6 @@
   // РАСЧЕТ ОСТАТКОВ
   function updateBalances() {
     let totalInc = 0, totalExp = 0;
-
     INCOMES.forEach(c => totalInc += (c.nikita + c.liza));
     EXPENSES.forEach(c => totalExp += (c.nikita + c.liza));
 
@@ -256,7 +254,6 @@
     endEl.textContent = fmt(endBalance);
     endEl.style.color = endBalance < 0 ? 'var(--danger)' : 'var(--accent)';
 
-    // Передаем в инпут настроек
     document.getElementById('start-balance-input').value = START_BALANCE;
     
     renderExpenses();
