@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Семейный бюджет</title>
+<style>
+  :root{
+    --bg:#f0f4f8; --card:#ffffff; --text:#1e293b;
+    --muted:#64748b; --accent:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+    --nikita:#3b82f6; --liza:#ec4899; --border:#e2e8f0; --passive:#8b5cf6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;}
+  body{background:var(--bg); color:var(--text); padding-bottom:80px;}
+
+  header{display:flex; align-items:center; justify-content:space-between; padding:16px; background:var(--card); position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border);}
+  .avatars{display:flex;}
+  .avatar{width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; border:2px solid var(--card); margin-left:-10px;}
+  .avatar.n{background:var(--nikita); z-index:2;}
+  .avatar.l{background:var(--liza);}
+  .avatar:first-child{margin-left:0;}
+  .month{background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px 14px; border-radius:20px; font-size:14px; font-weight:600;}
+
+  main{padding:16px; display:flex; flex-direction:column; gap:16px; max-width:800px; margin:0 auto;}
+  .card{background:var(--card); border-radius:20px; padding:20px; border:1px solid var(--border); box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);}
+  
+  .tabs{display:flex; background:var(--card); border-radius:16px; padding:4px; border:1px solid var(--border); margin-bottom:4px;}
+  .tab{flex:1; padding:12px; text-align:center; font-size:15px; font-weight:600; color:var(--muted); border-radius:12px; cursor:pointer;}
+  .tab.active{background:var(--text); color:#fff;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  /* Блок движения средств */
+  .flow-summary{display:flex; flex-direction:column; gap:12px; margin-bottom:16px;}
+  .flow-item{display:flex; justify-content:space-between; font-size:14px; padding-bottom:8px; border-bottom:1px dashed var(--border);}
+  .flow-item.total{font-size:18px; font-weight:700; border-bottom:none; padding-top:8px;}
+  .flow-item .plus{color:var(--accent); font-weight:600;}
+  .flow-item .minus{color:var(--danger); font-weight:600;}
+
+  .section-title{font-size:16px; font-weight:700; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;}
+  .btn-small{background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;}
+  
+  .bar-bg{height:8px; background:var(--bg); border-radius:6px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:6px; transition:width 0.4s, background-color 0.4s;}
+  
+  .cat-row{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border);}
+  .cat-row:last-child{border-bottom:none;}
+  .cat-top{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;}
+  .cat-name{font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px;}
+  .cat-icon{width:28px; height:28px; display:flex; align-items:center; justify-content:center; background:var(--bg); border-radius:8px; font-size:14px;}
+  .cat-vals{font-size:13px; text-align:right; color:var(--muted);}
+  .cat-vals b{color:var(--text); font-size:15px;}
+  
+  .who-bars{display:flex; gap:12px; margin-top:10px; font-size:12px;}
+  .who-bar-col{flex:1;}
+  .who-bar-head{display:flex; justify-content:space-between; margin-bottom:4px; color:var(--muted);}
+  .who-bar-head .name.n{color:var(--nikita); font-weight:600;}
+  .who-bar-head .name.l{color:var(--liza); font-weight:600;}
+  .who-bar-bg{height:6px; background:var(--bg); border-radius:4px; overflow:hidden;}
+  .who-bar-fill{height:100%; border-radius:4px;}
+
+  .cat-meta{display:flex; justify-content:space-between; font-size:12px; margin-top:8px; color:var(--muted);}
+  .over-text{color:var(--danger); font-weight:600;}
+
+  .badge-n{background:rgba(59,130,246,0.1); color:var(--nikita); padding:2px 8px; border-radius:6px; font-weight:600;}
+  .badge-l{background:rgba(236,72,153,0.1); color:var(--liza); padding:2px 8px; border-radius:6px; font-weight:600;}
+  .badge-p{background:rgba(139,92,246,0.1); color:var(--passive); padding:2px 8px; border-radius:6px; font-weight:600;}
+
+  .sub-title{font-size:13px; text-transform:uppercase; color:var(--muted); font-weight:700; margin:16px 0 12px;}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:30; display:none; align-items:flex-end; justify-content:center;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--card); width:100%; max-width:500px; border-radius:24px 24px 0 0; padding:24px; max-height:90vh; overflow-y:auto;}
+  .modal h3{font-size:18px; margin-bottom:16px; display:flex; justify-content:space-between;}
+  .close-btn{background:none; border:none; font-size:24px; cursor:pointer; color:var(--muted);}
+
+  .form-group{margin-bottom:12px;}
+  label{display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;}
+  input, select{width:100%; padding:12px; border:1px solid var(--border); border-radius:12px; font-size:15px; background:var(--bg); color:var(--text); outline:none;}
+  .btn{width:100%; padding:14px; border:none; border-radius:12px; font-size:16px; font-weight:700; background:var(--accent); color:#fff; cursor:pointer;}
+  
+  .checkbox-group{display:flex; align-items:center; gap:8px; margin-bottom:12px; background:rgba(59,130,246,0.05); padding:12px; border-radius:12px; cursor:pointer;}
+  .checkbox-group input{width:18px; height:18px; margin:0; cursor:pointer;}
+
+  .manage-tabs{display:flex; gap:8px; margin-bottom:16px;}
+  .manage-tab{flex:1; padding:8px; text-align:center; font-size:13px; font-weight:600; background:var(--bg); border-radius:8px; cursor:pointer; border:1px solid var(--border);}
+  .manage-tab.active{background:var(--text); color:#fff; border-color:var(--text);}
+
+  .manage-item{display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg); border-radius:12px; margin-bottom:8px;}
+  .manage-item .name{display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px;}
+  .btn-del{background:rgba(239,68,68,0.1); color:var(--danger); border:none; width:32px; height:32px; border-radius:8px; cursor:pointer;}
+
+  .fab{position:fixed; right:20px; bottom:24px; width:60px; height:60px; border-radius:50%; background:var(--nikita); color:#fff; font-size:32px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(59,130,246,0.4); display:flex; align-items:center; justify-content:center; z-index:20;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="avatars"><div class="avatar n">Н</div><div class="avatar l">Л</div></div>
+  <button class="month">Сентябрь 2026 ▾</button>
+</header>
+
+<main>
+  <!-- Блок движения средств (Остаток) -->
+  <section class="card">
+    <div class="section-title">Движение средств</div>
+    <div class="flow-summary">
+      <div class="flow-item"><span>Остаток с прошлого месяца</span><span class="val" id="start-balance">0 ₽</span></div>
+      <div class="flow-item"><span>Доходы за месяц</span><span class="plus" id="month-income">+ 0 ₽</span></div>
+      <div class="flow-item"><span>Расходы за месяц</span><span class="minus" id="month-expense">- 0 ₽</span></div>
+      <div class="flow-item total"><span>Остаток на конец месяца</span><span id="end-balance">0 ₽</span></div>
+    </div>
+  </section>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('expenses')">💸 Расходы</div>
+    <div class="tab" onclick="switchTab('incomes')">💰 Доходы</div>
+  </div>
+
+  <!-- РАСХОДЫ -->
+  <div id="tab-expenses" class="tab-content active">
+    <section class="card">
+      <div class="section-title">
+        <span>План расходов</span>
+        <button class="btn-small" onclick="openManageModal('expense')">⚙️ Настройки</button>
+      </div>
+      <div id="expenses-list"></div>
+    </section>
+  </div>
+
+  <!-- ДОХОДЫ -->
+  <div id="tab-incomes" class="tab-content">
+    <section class="card">
+      <div class="section-title">
+        <span>План доходов</span>
+        <button class="btn-small" onclick="openManageModal('income')">⚙️ Настройки</button>
+      </div>
+      <div id="incomes-list"></div>
+    </section>
+  </div>
+</main>
+
+<button class="fab" onclick="document.getElementById('modal-op').classList.add('open')">+</button>
+
+<!-- МОДАЛКА: ОПЕРАЦИЯ -->
+<div class="modal-backdrop" id="modal-op">
+  <div class="modal">
+    <h3>Новая операция <button class="close-btn" onclick="closeModal('modal-op')">×</button></h3>
+    <form id="opForm">
+      <div class="form-group">
+        <label>Тип</label>
+        <select id="type" required onchange="toggleNewCatField()">
+          <option value="expense">💸 Расход</option>
+          <option value="income">💰 Доход (Активный)</option>
+          <option value="passive">📈 Доход (Пассивный)</option>
+        </select>
+      </div>
+      
+      <label class="checkbox-group">
+        <input type="checkbox" id="isNewCat" onchange="toggleNewCatField()">
+        <span>Создать новую статью (категорию)</span>
+      </label>
+
+      <div class="form-group" id="existingCatGroup">
+        <label>Категория</label>
+        <select id="category"></select>
+      </div>
+
+      <div id="newCatGroup" style="display:none;">
+        <div class="form-group row-2" style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+          <div><label>Иконка</label><input type="text" id="new-cat-icon" placeholder="🎁" maxlength="2"></div>
+          <div><label>Название статьи</label><input type="text" id="new-cat-name" placeholder="Например: Аванс"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Кто</label>
+        <select id="who" required><option value="nikita">Никита</option><option value="liza">Лиза</option></select>
+      </div>
+      <div class="form-group">
+        <label>Сумма, ₽</label>
+        <input type="number" id="amount" min="1" placeholder="0" required>
+      </div>
+      <button type="submit" class="btn">Провести операцию</button>
+    </form>
+  </div>
+</div>
+
+<!-- МОДАЛКА: НАСТРОЙКИ -->
+<div class="modal-backdrop" id="modal-manage">
+  <div class="modal">
+    <h3>Настройки <button class="close-btn" onclick="closeModal('modal-manage')">×</button></h3>
+    
+    <div class="form-group">
+      <label>Стартовый остаток на месяц (₽)</label>
+      <input type="number" id="start-balance-input" onchange="updateStartBalance(this.value)">
+    </div>
+
+    <div class="manage-tabs">
+      <div class="manage-tab active" id="mtab-exp" onclick="switchManageTab('expense')">Расходы</div>
+      <div class="manage-tab" id="mtab-inc" onclick="switchManageTab('income')">Доходы</div>
+    </div>
+
+    <div class="manage-list" id="manage-list"></div>
+    
+    <div class="add-cat-form" style="border-top:1px solid var(--border); padding-top:16px;">
+      <button class="btn" onclick="closeModal('modal-manage')">Готово</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // СТАРТОВЫЙ БАЛАНС
+  let START_BALANCE = 5448776; 
+
+  // ДАННЫЕ
+  let EXPENSES = [
+    { id: 'housing', icon: '🏠', name: 'Квартира', plan: 47000, nikita: 23500, liza: 23500 },
+    { id: 'food',    icon: '🍔', name: 'Продукты', plan: 25000, nikita: 10000, liza: 8000 },
+    { id: 'cafe',    icon: '☕', name: 'Кафе',     plan: 5000,  nikita: 0,     liza: 0 },
+    { id: 'health',  icon: '💊', name: 'Здоровье', plan: 1000,  nikita: 3200,  liza: 0 }
+  ];
+
+  let INCOMES = [
+    { id: 'salary',   icon: '💼', name: 'Зарплата',     plan: 164000, nikita: 100000, liza: 64000, isPassive: false },
+    { id: 'deposits', icon: '🏦', name: '% по вкладам', plan: 16000,  nikita: 16000,  liza: 0,     isPassive: true }
+  ];
+
+  let currentManageTab = 'expense';
+
+  // УТИЛИТЫ
+  const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ₽';
+  const fmtNum = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(n));
+  const closeModal = (id) => document.getElementById(id).classList.remove('open');
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if(tabId === 'expenses') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('tab-expenses').classList.add('active'); }
+    else { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('tab-incomes').classList.add('active'); }
+  }
+
+  // РАСЧЕТ ОСТАТКОВ
+  function updateBalances() {
+    let totalInc = 0, totalExp = 0;
+
+    INCOMES.forEach(c => totalInc += (c.nikita + c.liza));
+    EXPENSES.forEach(c => totalExp += (c.nikita + c.liza));
+
+    document.getElementById('start-balance').textContent = fmt(START_BALANCE);
+    document.getElementById('month-income').textContent = '+ ' + fmt(totalInc);
+    document.getElementById('month-expense').textContent = '- ' + fmt(totalExp);
+    
+    const endBalance = START_BALANCE + totalInc - totalExp;
+    const endEl = document.getElementById('end-balance');
+    endEl.textContent = fmt(endBalance);
+    endEl.style.color = endBalance < 0 ? 'var(--danger)' : 'var(--accent)';
+
+    // Передаем в инпут настроек
+    document.getElementById('start-balance-input').value = START_BALANCE;
+    
+    renderExpenses();
+    renderIncomes();
+  }
+
+  function updateStartBalance(val) {
+    START_BALANCE = Number(val) || 0;
+    updateBalances();
+  }
+
+  // РЕНДЕР РАСХОДОВ
+  function renderExpenses() {
+    const container = document.getElementById('expenses-list');
+    container.innerHTML = '';
+    EXPENSES.forEach(cat => {
+      const catFact = cat.nikita + cat.liza;
+      const pct = cat.plan > 0 ? (catFact / cat.plan) * 100 : 0;
+      const barColor = pct >= 100 ? 'var(--danger)' : (pct >= 80 ? 'var(--warn)' : 'var(--accent)');
+      const remain = cat.plan - catFact;
+      const remainHtml = remain < 0 ? `<span class="over-text">Перерасход ${fmt(-remain)}</span>` : `Осталось ${fmt(remain)}`;
+      const pctN = catFact > 0 ? (cat.nikita / catFact) * 100 : 0;
+      const pctL = catFact > 0 ? (cat.liza / catFact) * 100 : 0;
+
+      container.innerHTML += `
+        <div class="cat-row">
+          <div class="cat-top"><div class="cat-name"><div class="cat-icon">${cat.icon}</div>${cat.name}</div><div class="cat-vals"><b>${fmtNum(catFact)}</b> / ${fmtNum(cat.plan)}</div></div>
+          <div class="bar-bg" style="margin-bottom:8px;"><div class="bar-fill" style="width:${Math.min(pct, 100)}%; background:${barColor}"></div></div>
+          <div class="who-bars">
+            <div class="who-bar-col"><div class="who-bar-head"><span class="name n">Никита</span><span>${fmtNum(cat.nikita)} ₽</span></div><div class="who-bar-bg"><div class="who-bar-fill" style="width:${pctN}%; background:var(--nikita)"></div></div></div>
+            <div class="who-bar-col"><div class="who-bar-head"><span class="name l">Лиза</span><span>${fmtNum(cat.liza)} ₽</span></div><div class="who-bar-bg"><div class="who-bar-fill" style="width:${pctL}%; background:var(--liza)"></div></div></div>
+          </div>
+          <div class="cat-meta"><span>${Math.round(pct)}%</span>${remainHtml}</div>
+        </div>`;
+    });
+  }
+
+  // РЕНДЕР ДОХОДОВ
+  function renderIncomes() {
+    const container = document.getElementById('incomes-list');
+    container.innerHTML = '';
+    const renderGroup = (cats, title) => {
+      if(cats.length === 0) return;
+      container.innerHTML += `<div class="sub-title">${title}</div>`;
+      cats.forEach(cat => {
+        const catFact = cat.nikita + cat.liza;
+        const pct = cat.plan > 0 ? (catFact / cat.plan) * 100 : 0;
+        const barColor = pct >= 100 ? 'var(--accent)' : (pct >= 50 ? 'var(--warn)' : 'var(--danger)');
+        const remain = cat.plan - catFact;
+        const remainHtml = remain > 0 ? `<span class="over-text" style="color:var(--warn)">Недобор ${fmt(remain)}</span>` : `<span style="color:var(--accent); font-weight:600">+${fmt(-remain)} к плану</span>`;
+        const pctN = catFact > 0 ? (cat.nikita / catFact) * 100 : 0;
+        const pctL = catFact > 0 ? (cat.liza / catFact) * 100 : 0;
+
+        container.innerHTML += `
+          <div class="cat-row">
+            <div class="cat-top"><div class="cat-name"><div class="cat-icon">${cat.icon}</div>${cat.name}</div><div class="cat-vals"><b>${fmtNum(catFact)}</b> / ${fmtNum(cat.plan)}</div></div>
+            <div class="bar-bg" style="margin-bottom:8px;"><div class="bar-fill" style="width:${Math.min(pct, 100)}%; background:${barColor}"></div></div>
+            <div class="who-bars">
+              <div class="who-bar-col"><div class="who-bar-head"><span class="name n">Никита</span><span>${fmtNum(cat.nikita)} ₽</span></div><div class="who-bar-bg"><div class="who-bar-fill" style="width:${pctN}%; background:var(--nikita)"></div></div></div>
+              <div class="who-bar-col"><div class="who-bar-head"><span class="name l">Лиза</span><span>${fmtNum(cat.liza)} ₽</span></div><div class="who-bar-bg"><div class="who-bar-fill" style="width:${pctL}%; background:var(--liza)"></div></div></div>
+            </div>
+            <div class="cat-meta"><span>${Math.round(pct)}%</span>${remainHtml}</div>
+          </div>`;
+      });
+    };
+    renderGroup(INCOMES.filter(c => !c.isPassive), 'Активные доходы');
+    renderGroup(INCOMES.filter(c => c.isPassive), 'Пассивные доходы');
+  }
+
+  // УПРАВЛЕНИЕ КАТЕГОРИЯМИ
+  function openManageModal(type) {
+    switchManageTab(type);
+    document.getElementById('modal-manage').classList.add('open');
+  }
+
+  function switchManageTab(type) {
+    currentManageTab = type;
+    document.getElementById('mtab-exp').classList.toggle('active', type === 'expense');
+    document.getElementById('mtab-inc').classList.toggle('active', type === 'income');
+    
+    const list = document.getElementById('manage-list');
+    list.innerHTML = '';
+    const source = type === 'expense' ? EXPENSES : INCOMES;
+
+    source.forEach(cat => {
+      list.innerHTML += `<div class="manage-item"><div class="name">${cat.icon} ${cat.name} <span class="plan">(План: ${fmtNum(cat.plan)} ₽)</span></div><button class="btn-del" onclick="deleteCategory('${cat.id}', '${type}')">✕</button></div>`;
+    });
+  }
+
+  function deleteCategory(id, type) {
+    if(!confirm('Удалить статью? Все данные о ней сбросятся.')) return;
+    if(type === 'expense') EXPENSES = EXPENSES.filter(c => c.id !== id);
+    else INCOMES = INCOMES.filter(c => c.id !== id);
+    switchManageTab(type); 
+    updateBalances(); 
+    updateCategoryOptions();
+  }
+
+  // ФОРМА ОПЕРАЦИИ
+  function toggleNewCatField() {
+    const isNew = document.getElementById('isNewCat').checked;
+    document.getElementById('existingCatGroup').style.display = isNew ? 'none' : 'block';
+    document.getElementById('newCatGroup').style.display = isNew ? 'block' : 'none';
+    if(!isNew) updateCategoryOptions();
+  }
+
+  function updateCategoryOptions() {
+    const type = document.getElementById('type').value;
+    const select = document.getElementById('category');
+    select.innerHTML = '';
+    
+    if(document.getElementById('isNewCat').checked) return;
+
+    let src = type === 'expense' ? EXPENSES : (type === 'income' ? INCOMES.filter(c => !c.isPassive) : INCOMES.filter(c => c.isPassive));
+    if(src.length === 0) { select.innerHTML = '<option value="">Нет категорий</option>'; return; }
+    src.forEach(c => select.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`);
+  }
+
+  document.querySelectorAll('.modal-backdrop').forEach(b => b.onclick = (e) => { if (e.target === b) b.classList.remove('open'); });
+
+  document.getElementById('opForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const type = document.getElementById('type').value;
+    const isNew = document.getElementById('isNewCat').checked;
+    const who = document.getElementById('who').value;
+    const amount = Number(document.getElementById('amount').value);
+    
+    if(!amount || amount <= 0) return;
+
+    let targetCat;
+
+    if (isNew) {
+      const name = document.getElementById('new-cat-name').value.trim();
+      const icon = document.getElementById('new-cat-icon').value.trim() || '📦';
+      if(!name) return alert('Введите название новой статьи');
+      
+      const newId = 'cat_' + Date.now();
+      const isPassive = (type === 'passive');
+      targetCat = { id: newId, icon, name, plan: 0, nikita: 0, liza: 0, isPassive };
+      
+      if (type === 'expense') EXPENSES.push(targetCat);
+      else INCOMES.push(targetCat);
+      
+      document.getElementById('new-cat-name').value = '';
+      document.getElementById('new-cat-icon').value = '';
+      document.getElementById('isNewCat').checked = false;
+      toggleNewCatField();
+    } else {
+      const catId = document.getElementById('category').value;
+      const arr = (type === 'expense') ? EXPENSES : INCOMES;
+      targetCat = arr.find(c => c.id === catId);
+    }
+
+    if (targetCat) {
+      targetCat[who] += amount;
+      if (type === 'expense') targetCat.plan = Math.max(targetCat.plan, targetCat.nikita + targetCat.liza);
+    }
+
+    updateBalances();
+    updateCategoryOptions();
+    closeModal('modal-op');
+    document.getElementById('amount').value = '';
+    switchTab(type === 'expense' ? 'expenses' : 'incomes');
+  });
+
+  // СТАРТ
+  toggleNewCatField();
+  updateBalances();
+</script>
+</body>
+</html>
